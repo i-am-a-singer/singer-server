@@ -21,13 +21,13 @@ func NewServer() *negroni.Negroni {
 	})
 
 	// 初始化路由器
-	router.HandleFunc("/api/", handlerAPI(format)).Methods("GET")
-	router.HandleFunc("/seasons/", handlerSeasons(format)).Methods("GET")
-	router.HandleFunc("/season/{id}", handlerSeasonId(format)).Methods("GET")
-	router.HandleFunc("/season/{id}/singers", handlerSingers(format)).Methods("GET")
-	router.HandleFunc("/season/{id}/songs", handlerSongs(format)).Methods("GET")
-	router.HandleFunc("/singers/?name={singer}", handlerSingerName(format)).Methods("GET")
-	router.HandleFunc("/songs/?name={song}", handlerSongName(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/", handleAPI(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/seasons/", handleSeasons(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/season/{id}", handleSeasonId(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/season/{id}/singers", handleSingers(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/season/{id}/songs", handleSongs(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/singers/?name={singer}", handleSingerName(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/songs/?name={song}", handleSongName(format)).Methods("GET")
 
 	// 添加中间件
 	server.UseHandler(router)

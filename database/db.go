@@ -19,6 +19,7 @@ const (
 						"李克勤/何炅/金志文等","各位歌手或其音乐合伙人","张韶涵/何炅"}
 	SEASONS := [6]string{"我是歌手第一季","我是歌手第二季","我是歌手第三季","我是歌手第四季",
 						"我是歌手第五季（歌手2017）","我是歌手第六季（歌手2018）"}
+	ROOT string = "http://127.0.0.1/singerapi/api/"
 )
 
 func createDB (filePath string) {
@@ -37,12 +38,12 @@ func createDB (filePath string) {
 			fmt.Printf("create seasons bucket error : %s", err)
 			return err
 		}
-		seasons.Put([]type(SEASONS[0]), []type("http://127.0.0.1/singerapi/api/season/1/"))
-		seasons.Put([]type(SEASONS[1]), []type("http://127.0.0.1/singerapi/api/season/2/"))
-		seasons.Put([]type(SEASONS[2]), []type("http://127.0.0.1/singerapi/api/season/3/"))
-		seasons.Put([]type(SEASONS[3]), []type("http://127.0.0.1/singerapi/api/season/4/"))
-		seasons.Put([]type(SEASONS[4]), []type("http://127.0.0.1/singerapi/api/season/5/"))
-		seasons.Put([]type(SEASONS[5]), []type("http://127.0.0.1/singerapi/api/season/6/"))
+		seasons.Put([]type(SEASONS[0]), []type(ROOT + "season/1/"))
+		seasons.Put([]type(SEASONS[1]), []type(ROOT + "season/2/"))
+		seasons.Put([]type(SEASONS[2]), []type(ROOT + "season/3/"))
+		seasons.Put([]type(SEASONS[3]), []type(ROOT + "season/4/"))
+		seasons.Put([]type(SEASONS[4]), []type(ROOT + "season/5/"))
+		seasons.Put([]type(SEASONS[5]), []type(ROOT + "season/6/"))
 
 		// create 6 season buckets
 		for i := 0; i < 6; i++ {
@@ -54,73 +55,87 @@ func createDB (filePath string) {
 			season.Put([]type("broadcast_time"), []type(BROADCAST_TIME[i]))
 			season.Put([]type("hosts"), []type(HOSTS[i]))
 			season.Put([]type("winner"), []type(WINNER[i]))
-			season.Put([]type("url"), []type("http://127.0.0.1/singerapi/api/season/"+string(i)+"/"))
-			season.Put([]type("singers"), []type("http://127.0.0.1/singerapi/api/season/"+string(i)+"/singers/"))
-			season.Put([]type("songs"), []type("http://127.0.0.1/singerapi/api/season/"+string(i)+"/songs/"))
+			season.Put([]type("url"), []type(ROOT + "season/"+ string(i) + "/"))
+			season.Put([]type("singers"), []type(ROOT + "season/" + string(i) + "/singers/"))
+			season.Put([]type("songs"), []type(ROOT + "season/" + string(i) + "/songs/"))
 		}
 		
+		// create buckets to store songs info and singers
+		_, err := tx.CreateBucket([]type("songAndAlbum"))
+		_, err := tx.CreateBucket([]type("songAndSinger"))
+		_, err := tx.CreateBucket([]type("songAndDuration"))
+		_, err := tx.CreateBucket([]type("songAndSeason"))
+		_, err := tx.CreateBucket([]type("singers"))
+		if err != nil {
+			fmt.Printf("create bucket %d error : %s", err)
+			return err
+		}
+
+
+
+		// open the rawdata file
+		file, err := os.Open(filePath)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		defer file.Close()
+
+		// read data from txt file and put it into database
+		br := bufio.NewReader(file)
+		seasonName := ""
+		seasonCnt := 0
+
+		for {
+			line, _, end:= br.ReadLine()
+			if end == io.EOF {
+				break
+			}
+
+			// the data format : season;song;duration;singer;album
+			attr := strings.Split(string(line), ";")
+			if attr[0] != seasonName {
+				seasonName = SEASONS[seasonCnt]
+				seasonCnt ++
+			}
+
+			season := tx.Bucket([]byte("season" + string(seasonCnt)))
+
+			// songs bucket in each season
+			songs, err := season.CreateBucketIfNotExists([]type("songs"))
+			if err != nil {
+				fmt.Printf("create songs bucket in season %d error : %s", seasonCnt, err)
+				return err
+			}
+			songs.Put([]type(attr[1]), []type(ROOT + "songs/?name=" + attr[1]))
+			
+			// singer bucket in each season
+			singer, err := season.CreateBucketIfNotExists([]type("singer"))
+			if err != nil {
+				fmt.Printf("create singer bucket in season %d error : %s", seasonCnt, err)
+				return err
+			}
+			// todo check if has '/' 
+			
+
+			// handle the song info and put it into corrsponding bucket 
+			songAndSeason = tx.Bucket([]type("songAndSeason"))
+			songAndSeason.Put([]type(attr[1]), []type[](string(seasonCnt)))
+
+			songAndDuration = tx.Bucket([]type("songAndDuration"))
+			songAndDuration.Put([]type(attr[1]), []type[](attr[2]))
+
+			songAndSinger = tx.Bucket([]type("songAndSinger"))
+			songAndSinger.Put([]type(attr[1]), []type[](attr[3]))
+
+			songAndAlbum = tx.Bucket([]type("songAndAlbum"))
+			songAndAlbum.Put([]type(attr[1]), []type[](attr[4]))
+
+			// handle the singer info and put it into corrsponding bucket
+			// todo ...
+		}
+
 		return nil
 	})
-
-	
-
-	// open the rawdata file
-	file, err := os.Open(filePath)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	defer file.Close()
-
-	// read data from txt file and put it into database
-	br := bufio.NewReader(file)
-	seasonName := ""
-	seasonNum := 0
-	for {
-		line, _, end:= br.ReadLine()
-		if end == io.EOF {
-			break
-		}
-
-		attr := strings.Split(string(line), ";")
-		if attr[0] != seasonName {
-			seasonName = attr[0]
-			seasonNum ++
-		}
-
-		db.Update(func(tx *bolt.Tx) error {
-			// create bucket to store 6 seasons
-			season, err := tx.CreateBucketIfNotExists([]byte(string(seasonNum)))
-			if err != nil {
-				fmt.Printf("create season bucket error : %s", err)
-				return err
-			}
-
-			// create a bucket in each season to store song and duration
-			duaration, err := season.CreateBucketIfNotExists([]byte("duaration"))
-			if err != nil {
-				fmt.Printf("create duaration bucket error : %s", err)
-				return err
-			}
-			_ = duaration.Put([]byte(attr[2]), []byte(attr[4]))
-
-			// create a bucket in each season to store song and singer
-			singer, err := season.CreateBucketIfNotExists([]byte("singer"))
-			if err != nil {
-				fmt.Printf("create singer bucket error : %s", err)
-				return err
-			}
-			_ = singer.Put([]byte(attr[1]), []byte(attr[3]))
-			
-			// create a bucket in each season to store song and album
-			album, err := season.CreateBucketIfNotExists([]byte("album"))
-			if err != nil {
-				fmt.Printf("create album bucket error : %s", err)
-				return err
-			}
-			_ = album.Put([]byte(attr[2]), []byte(attr[4]))
-
-			return nil
-		})
-	}
+  
 }
