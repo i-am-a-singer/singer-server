@@ -17,7 +17,7 @@ var	BROADCAST_TIME = [6]string{"2013.1.18-2013.4.12", "2014.1.3-2014.4.11", "201
 var	WINNER = [6]string{"羽泉","韩磊","韩红","李玟","林忆莲","Jessie J"}
 var	HOSTS = [6]string{"胡海泉/陈羽凡/沙宝亮/何炅/汪涵","张宇/廖凡/胡海泉/何炅/汪涵","古巨基/孙楠/汪涵/沈梦辰",
 						"李克勤/何炅/金志文等","各位歌手或其音乐合伙人","张韶涵/何炅"}
-var	SEASONS = [6]string{"我是歌手第一季","我是歌手第二季","我是歌手第三季","我是歌手第四季",
+var	TITLES = [6]string{"我是歌手第一季","我是歌手第二季","我是歌手第三季","我是歌手第四季",
 						"我是歌手第五季（歌手2017）","我是歌手第六季（歌手2018）"}
 var	ROOT string = "http://127.0.0.1/singerapi/api/"
 
@@ -38,12 +38,12 @@ func createDB (filePath string) {
 			fmt.Printf("create seasons bucket error : %s", err)
 			return err
 		}
-		seasons.Put([]byte(SEASONS[0]), []byte(ROOT + "season/1/"))
-		seasons.Put([]byte(SEASONS[1]), []byte(ROOT + "season/2/"))
-		seasons.Put([]byte(SEASONS[2]), []byte(ROOT + "season/3/"))
-		seasons.Put([]byte(SEASONS[3]), []byte(ROOT + "season/4/"))
-		seasons.Put([]byte(SEASONS[4]), []byte(ROOT + "season/5/"))
-		seasons.Put([]byte(SEASONS[5]), []byte(ROOT + "season/6/"))
+		seasons.Put([]byte(TITLES[0]), []byte(ROOT + "season/1/"))
+		seasons.Put([]byte(TITLES[1]), []byte(ROOT + "season/2/"))
+		seasons.Put([]byte(TITLES[2]), []byte(ROOT + "season/3/"))
+		seasons.Put([]byte(TITLES[3]), []byte(ROOT + "season/4/"))
+		seasons.Put([]byte(TITLES[4]), []byte(ROOT + "season/5/"))
+		seasons.Put([]byte(TITLES[5]), []byte(ROOT + "season/6/"))
 
 		// create 6 season buckets
 		for i := 0; i < 6; i++ {
@@ -52,6 +52,7 @@ func createDB (filePath string) {
 				fmt.Printf("create season bucket %d error : %s", i, err)
 				return err
 			}
+			season.Put([]byte("title"), []byte(TITLES[i]))
 			season.Put([]byte("broadcast_time"), []byte(BROADCAST_TIME[i]))
 			season.Put([]byte("hosts"), []byte(HOSTS[i]))
 			season.Put([]byte("winner"), []byte(WINNER[i]))
@@ -95,7 +96,7 @@ func createDB (filePath string) {
 			// the data format : season;song;duration;singer;album
 			attr := strings.Split(string(line), ";")
 			if attr[0] != seasonName {
-				seasonName = SEASONS[seasonCnt]
+				seasonName = TITLES[seasonCnt]
 				seasonCnt ++
 			}
 
@@ -160,4 +161,101 @@ func createDB (filePath string) {
 		return nil
 	})
   
+}
+
+
+func query (api int, param string) string {
+	db, err := bolt.Open("data.db", 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	var jsonStr string
+	switch api {
+	case 1:
+		//api : /singerapi/api/seasons/{id}
+		db.View(func(tx *bolt.Tx) error {
+			season := tx.Bucket([]byte("season" + param))
+
+			// title := season.Get([]byte("title"))
+			// broadcast_time := season.Get([]byte("broadcast_time"))
+			// winner := season.Get([]byte("winner"))
+			// hosts  := season.Get([]byte("hosts"))
+			// url  := season.Get([]byte("url"))
+			// singers  := season.Get([]byte("singers"))
+			// songs  := season.Get([]byte("songs"))
+			
+			cur := season.Cursor()
+
+			jsonStr = "{"
+			for k,v := cur.First(); k != nil; k,v = cur.Next() {
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+			}
+			jsonStr += "}"
+
+			return nil
+		})
+	case 2:
+		//api : /singerapi/api/seasons/{id}/singers/
+		db.View(func(tx *bolt.Tx) error {
+			season := tx.Bucket([]byte("season" + param))
+			singers := season.Bucket([]byte("singers"))
+
+			cur := singers.Cursor()
+
+			jsonStr = "{"
+			for k,v := cur.First(); k != nil; k,v = cur.Next() {
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+			}
+			jsonStr += "}"
+			return nil
+		})
+	case 3:
+		//api : /singerapi/api/seasons/{id}/songs
+		db.View(func(tx *bolt.Tx) error {
+			season := tx.Bucket([]byte("season" + param))
+			songs := season.Bucket([]byte("songs"))
+
+			cur := songs.Cursor()
+
+			jsonStr = "{"
+			for k,v := cur.First(); k != nil; k,v = cur.Next() {
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+			}
+			jsonStr += "}"
+			return nil
+		})
+	case 4:
+		//api : /singerapi/api/singers/?singer={singer}
+		db.View(func(tx *bolt.Tx) error {
+			singers := tx.Bucket([]byte("singers"))
+			cur := singers.Cursor()
+
+			jsonStr = "{"
+			for k,v := cur.Seek([]byte(param)); k != nil && string(k) == param; k,v = cur.Next() {
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+			}
+			jsonStr += "}"
+
+			return nil
+		})
+	case 5:
+		//api : /singerapi/api/songs/?song={song}
+		db.View(func(tx *bolt.Tx) error {
+			songs := tx.Bucket([]byte("songs"))
+			cur := songs.Cursor()
+
+			jsonStr = "{"
+			for k,v := cur.Seek([]byte(param)); k != nil && string(k) == param; k,v = cur.Next() {
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+			}
+			jsonStr += "}"
+
+			return nil
+		})
+	default :
+		return ""
+
+	}
 }
