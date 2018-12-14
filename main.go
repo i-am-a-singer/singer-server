@@ -2,18 +2,20 @@ package main
 
 import (
 	"os"
-	flag "github.com/spf13/pflag"
+
+	db "github.com/singerapi/singer-server/database"
 	"github.com/singerapi/singer-server/service"
-	"github.com/singerapi/singer-server/database"
+	flag "github.com/spf13/pflag"
 )
 
-const(
+// constant
+const (
 	PORT string = "8080"
-	PATH string = "../rawdata/rawdata.txt"
+	PATH string = "rawdata/rawdata.txt"
 )
 
 func main() {
-	db.createDB(PATH);
+	db.CreateDB(PATH)
 
 	var port string
 	port = os.Getenv("PORT")
