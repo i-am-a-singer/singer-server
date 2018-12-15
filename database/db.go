@@ -23,6 +23,7 @@ var (
 	ROOT = "http://127.0.0.1/singerapi/api/"
 )
 
+// CreateDB create DB from raw data.
 func CreateDB(filePath string) {
 	// create the bolt database
 	db, err := bolt.Open("data.db", 0600, nil)
@@ -35,7 +36,7 @@ func CreateDB(filePath string) {
 		// create seasons bucket
 		seasons, err := tx.CreateBucket([]byte("seasons"))
 		if err != nil {
-			fmt.Printf("create seasons bucket error : %s", err)
+			log.Printf("create seasons bucket error : %s", err)
 			return err
 		}
 		seasons.Put([]byte(TITLES[0]), []byte(ROOT+"season/1/"))
@@ -49,7 +50,7 @@ func CreateDB(filePath string) {
 		for i := 0; i < 6; i++ {
 			season, err := tx.CreateBucket([]byte("season" + string(i+1)))
 			if err != nil {
-				fmt.Printf("create season bucket %d error : %s", i, err)
+				log.Printf("create season bucket %d error : %s", i, err)
 				return err
 			}
 			season.Put([]byte("title"), []byte(TITLES[i]))
@@ -159,6 +160,7 @@ func CreateDB(filePath string) {
 
 }
 
+// Query query resource from db
 func Query(api int, param string) string {
 	db, err := bolt.Open("data.db", 0600, nil)
 	if err != nil {

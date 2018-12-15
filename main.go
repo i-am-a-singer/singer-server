@@ -1,11 +1,11 @@
 package main
 
 import (
-	"os"
+	"fmt"
+	"log"
 
-	db "github.com/singerapi/singer-server/database"
-	"github.com/singerapi/singer-server/service"
-	flag "github.com/spf13/pflag"
+	"github.com/boltdb/bolt"
+	"github.com/singerapi/singer-server/rawdata"
 )
 
 // constant
@@ -15,17 +15,21 @@ const (
 )
 
 func main() {
-	db.CreateDB(PATH)
-
-	var port string
-	port = os.Getenv("PORT")
-	if len(port) <= 0 {
-		port = PORT
+	// create the bolt database
+	db, err := bolt.Open("data.db", 0600, nil)
+	if err != nil {
+		log.Fatal(err)
 	}
+	defer db.Close()
 
-	flag.StringVarP(&port, "port", "p", "8080", "the port to listen")
-	flag.Parse()
+	db.Update(rawdata.PreprocessRawData)
 
-	server := service.NewServer()
-	server.Run(":" + port)
+	db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("season"))
+		cur := bucket.Cursor()
+		for k, v := cur.First(); k != nil; k, v = cur.Next() {
+			fmt.Printf("%s %s\n", k, v)
+		}
+		return nil
+	})
 }

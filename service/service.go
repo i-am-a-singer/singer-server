@@ -32,14 +32,13 @@ func NewServer() *negroni.Negroni {
 	router.HandleFunc("/singerapi/api/singers/?singer={singer}", handleSingerName(format)).Methods("GET")
 	router.HandleFunc("/singerapi/api/songs/?song={song}", handleSongName(format)).Methods("GET")
 
-	// 添加静态文件中间件
+	// 添加静态文件中间件, Prefix必须是"/xxx"，而不是"/xxx/"
 	static := negroni.NewStatic(http.Dir("./dist"))
 	static.Prefix = "/singerapi"
 	server.Use(static)
 
 	// 添加路由
 	server.UseHandler(router)
-
 	return server
 }
 
