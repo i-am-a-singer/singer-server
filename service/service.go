@@ -62,7 +62,7 @@ func NewServer() *negroni.Negroni {
 
 // 处理 /singerapi/api/ 请求
 func handleAPI(w http.ResponseWriter, r *http.Request) {
-	prefix := r.Proto + "://" + r.Host + APIPrefix
+	prefix := "http://" + r.Host + APIPrefix
 
 	var respBody = map[string]string{
 		"api":     prefix + "/",
