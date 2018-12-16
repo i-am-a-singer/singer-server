@@ -1,3 +1,17 @@
 language: go
-before_install: go install github.com/singerapi/singer-server
-script: go run server.go
+
+notifications:
+  email: false
+
+script: 
+- go test -v
+- cd database
+- go test -v
+- cd ../entity
+- go test -v
+- cd ../rawdata
+- go test -v
+- cd ../render
+- go test -v
+- cd ../service
+- go test -v
