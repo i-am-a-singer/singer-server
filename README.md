@@ -14,3 +14,4 @@ singer-server
 
 Then you can log API Client at site [http://127.0.0.1:8080/singerapi/](http://127.0.0.1:8080/singerapi/)
 
+![demo](demo/demo.png)
