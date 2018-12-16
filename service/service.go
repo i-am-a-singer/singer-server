@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"net/http"
+	"fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/unrolled/render"
@@ -26,9 +27,9 @@ func NewServer() *negroni.Negroni {
 	// 初始化路由器
 	router.HandleFunc("/singerapi/api/", handleAPI(format)).Methods("GET")
 	router.HandleFunc("/singerapi/api/seasons/", handleSeasons(format)).Methods("GET")
-	router.HandleFunc("/singerapi/api/seasons/{id}", handleSeasonsID(format)).Methods("GET")
-	router.HandleFunc("/singerapi/api/seasons/{id}/singers/", handleSingers(format)).Methods("GET")
-	router.HandleFunc("/singerapi/api/seasons/{id}/songs/", handleSongs(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/season/{id}/", handleSeasonsID(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/season/{id}/singers/", handleSingers(format)).Methods("GET")
+	router.HandleFunc("/singerapi/api/season/{id}/songs/", handleSongs(format)).Methods("GET")
 	router.HandleFunc("/singerapi/api/singers/?singer={singer}", handleSingerName(format)).Methods("GET")
 	router.HandleFunc("/singerapi/api/songs/?song={song}", handleSongName(format)).Methods("GET")
 
@@ -48,11 +49,11 @@ func handleAPI(format *render.Render) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var respBody = map[string]string{
 			"all seasons":       "http://127.0.0.1/singerapi/api/seasons/",
-			"specific season":   "http://127.0.0.1/singerapi/api/seasons/{id}/",
-			"singers in season": "http://127.0.0.1/singerapi/api/seasons/{id}/singers",
-			"songs in season":   "http://127.0.0.1/singerapi/api/seasons/{id}/songs",
-			"specific singer":   "http://127.0.0.1/singerapi/api/singers/?name={name}",
-			"specific song":     "http://127.0.0.1/singerapi/api/songs/?name={name}",
+			"specific season":   "http://127.0.0.1/singerapi/api/season/{id}/",
+			"singers in season": "http://127.0.0.1/singerapi/api/season/{id}/singers/",
+			"songs in season":   "http://127.0.0.1/singerapi/api/season/{id}/songs/",
+			"specific singer":   "http://127.0.0.1/singerapi/api/singers/?singer={singer}",
+			"specific song":     "http://127.0.0.1/singerapi/api/songs/?song={song}",
 		}
 		format.JSON(writer, http.StatusOK, respBody)
 	}
@@ -63,22 +64,24 @@ func handleSeasons(format *render.Render) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		jsonStr := `{
 			"songs":{
-				"我是歌手第一季":"http://127.0.0.1:8080/singerapi/api/seasons/1/",
-				"我是歌手第一季":"http://127.0.0.1:8080/singerapi/api/seasons/2/",
-				"我是歌手第一季":"http://127.0.0.1:8080/singerapi/api/seasons/3/",
-				"我是歌手第一季":"http://127.0.0.1:8080/singerapi/api/seasons/4/",
-				"我是歌手第一季(歌手2017)":"http://127.0.0.1:8080/singerapi/api/seasons/5/",
-				"我是歌手第一季(歌手2018)":"http://127.0.0.1:8080/singerapi/api/seasons/6/"},
+				"我是歌手第一季":"http://127.0.0.1:8080/singerapi/api/season/1/",
+				"我是歌手第二季":"http://127.0.0.1:8080/singerapi/api/season/2/",
+				"我是歌手第三季":"http://127.0.0.1:8080/singerapi/api/season/3/",
+				"我是歌手第四季":"http://127.0.0.1:8080/singerapi/api/season/4/",
+				"我是歌手第五季(歌手2017)":"http://127.0.0.1:8080/singerapi/api/season/5/",
+				"我是歌手第六季(歌手2018)":"http://127.0.0.1:8080/singerapi/api/season/6/"},
 			"url":"http://127.0.0.1/singerapi/api/seasons/"
 		}`
 		var respBody map[string]interface{}
 		if err := json.Unmarshal([]byte(jsonStr), &respBody); err == nil {
 			format.JSON(writer, http.StatusOK, respBody)
+		} else if err != nil {
+			fmt.Printf("Unmarshl json fail with err : %s", err)
 		}
 	}
 }
 
-// handleSeasonsID 处理 /singerapi/api/seasons/{id} 请求
+// handleSeasonsID 处理 /singerapi/api/seasons/{id}/ 请求
 func handleSeasonsID(format *render.Render) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		params := mux.Vars(request)
@@ -88,6 +91,8 @@ func handleSeasonsID(format *render.Render) http.HandlerFunc {
 		var respBody map[string]interface{}
 		if err := json.Unmarshal([]byte(jsonStr), &respBody); err == nil {
 			format.JSON(writer, http.StatusOK, respBody)
+		} else if err != nil {
+			fmt.Printf("Unmarshl json fail with err : %s", err)
 		}
 	}
 }
@@ -102,6 +107,8 @@ func handleSingers(format *render.Render) http.HandlerFunc {
 		var respBody map[string]interface{}
 		if err := json.Unmarshal([]byte(jsonStr), &respBody); err == nil {
 			format.JSON(writer, http.StatusOK, respBody)
+		} else if err != nil {
+			fmt.Printf("Unmarshl json fail with err : %s", err)
 		}
 	}
 }
@@ -116,6 +123,8 @@ func handleSongs(format *render.Render) http.HandlerFunc {
 		var respBody map[string]interface{}
 		if err := json.Unmarshal([]byte(jsonStr), &respBody); err == nil {
 			format.JSON(writer, http.StatusOK, respBody)
+		} else if err != nil {
+			fmt.Printf("Unmarshl json fail with err : %s", err)
 		}
 	}
 }
@@ -130,6 +139,8 @@ func handleSingerName(format *render.Render) http.HandlerFunc {
 		var respBody map[string]interface{}
 		if err := json.Unmarshal([]byte(jsonStr), &respBody); err == nil {
 			format.JSON(writer, http.StatusOK, respBody)
+		} else if err != nil {
+			fmt.Printf("Unmarshl json fail with err : %s", err)
 		}
 	}
 }
@@ -144,6 +155,8 @@ func handleSongName(format *render.Render) http.HandlerFunc {
 		var respBody map[string]interface{}
 		if err := json.Unmarshal([]byte(jsonStr), &respBody); err == nil {
 			format.JSON(writer, http.StatusOK, respBody)
+		} else if err != nil {
+			fmt.Printf("Unmarshl json fail with err : %s", err)
 		}
 	}
 }

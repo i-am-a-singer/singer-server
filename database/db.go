@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"strconv"
 
 	"github.com/boltdb/bolt"
 )
@@ -33,10 +34,10 @@ func CreateDB(filePath string) {
 
 	db.Update(func(tx *bolt.Tx) error {
 		// create seasons bucket
-		seasons, err := tx.CreateBucket([]byte("seasons"))
+		seasons, err := tx.CreateBucketIfNotExists([]byte("seasons"))
 		if err != nil {
 			fmt.Printf("create seasons bucket error : %s", err)
-			return err
+		//	return err
 		}
 		seasons.Put([]byte(TITLES[0]), []byte(ROOT+"season/1/"))
 		seasons.Put([]byte(TITLES[1]), []byte(ROOT+"season/2/"))
@@ -47,31 +48,32 @@ func CreateDB(filePath string) {
 
 		// create 6 season buckets
 		for i := 0; i < 6; i++ {
-			season, err := tx.CreateBucket([]byte("season" + string(i+1)))
+			season, err := tx.CreateBucketIfNotExists([]byte("season" + strconv.Itoa(i+1)))
 			if err != nil {
 				fmt.Printf("create season bucket %d error : %s", i, err)
 				return err
 			}
+			
 			season.Put([]byte("title"), []byte(TITLES[i]))
 			season.Put([]byte("BroadcastTime"), []byte(BroadcastTime[i]))
 			season.Put([]byte("hosts"), []byte(HOSTS[i]))
 			season.Put([]byte("winner"), []byte(WINNER[i]))
-			season.Put([]byte("url"), []byte(ROOT+"season/"+string(i)+"/"))
-			season.Put([]byte("singers"), []byte(ROOT+"season/"+string(i)+"/singers/"))
-			season.Put([]byte("songs"), []byte(ROOT+"season/"+string(i)+"/songs/"))
+			season.Put([]byte("url"), []byte(ROOT+"season/"+strconv.Itoa(i+1)+"/"))
+			season.Put([]byte("singers"), []byte(ROOT+"season/"+strconv.Itoa(i+1)+"/singers/"))
+			season.Put([]byte("songs"), []byte(ROOT+"season/"+strconv.Itoa(i+1)+"/songs/"))
 		}
 
 		// create buckets to store songs info and singers
-		_, err = tx.CreateBucket([]byte("songAndAlbum"))
-		_, err = tx.CreateBucket([]byte("songAndSinger"))
-		_, err = tx.CreateBucket([]byte("songAndDuration"))
-		_, err = tx.CreateBucket([]byte("songAndSeason"))
-		_, err = tx.CreateBucket([]byte("singerAndSong"))
+		_, err = tx.CreateBucketIfNotExists([]byte("songAndAlbum"))
+		_, err = tx.CreateBucketIfNotExists([]byte("songAndSinger"))
+		_, err = tx.CreateBucketIfNotExists([]byte("songAndDuration"))
+		_, err = tx.CreateBucketIfNotExists([]byte("songAndSeason"))
+		_, err = tx.CreateBucketIfNotExists([]byte("singerAndSong"))
 		if err != nil {
 			fmt.Printf("create bucket error : %s", err)
 			return err
 		}
-
+   
 		// open the rawdata file
 		file, err := os.Open(filePath)
 		if err != nil {
@@ -94,24 +96,22 @@ func CreateDB(filePath string) {
 			// the data format : season;song;duration;singer;album
 			attr := strings.Split(string(line), ";")
 			if attr[0] != seasonName {
-				seasonName = TITLES[seasonCnt]
+				seasonName = attr[0]
 				seasonCnt++
 			}
 
-			season := tx.Bucket([]byte("season" + string(seasonCnt)))
-
 			// songs bucket in each season
-			songs, err := season.CreateBucketIfNotExists([]byte("songs"))
+			songs, err := tx.CreateBucketIfNotExists([]byte("songsInSeason" + strconv.Itoa(seasonCnt)))
 			if err != nil {
-				fmt.Printf("create songs bucket in season %d error : %s", seasonCnt, err)
+				fmt.Printf("create songs in season %d bucket error : %s", seasonCnt, err)
 				return err
 			}
 			songs.Put([]byte(attr[1]), []byte(ROOT+"songs/?name="+attr[1]))
 
 			// singer bucket in each season
-			singer, err := season.CreateBucketIfNotExists([]byte("singer"))
+			singer, err := tx.CreateBucketIfNotExists([]byte("singerInSeason" + strconv.Itoa(seasonCnt)))
 			if err != nil {
-				fmt.Printf("create singer bucket in season %d error : %s", seasonCnt, err)
+				fmt.Printf("create singer in season %d bucket error : %s", seasonCnt, err)
 				return err
 			}
 			// split singers
@@ -130,8 +130,7 @@ func CreateDB(filePath string) {
 				// put singer info into season bucket
 				singer.Put([]byte(singers[i]), []byte(ROOT+"singers/?name="+singers[i]))
 				// put the singer and song into singerAndSong bucket in root
-				singerAndSong := tx.Bucket([]byte("singerAndSong"))
-				singerName, err := singerAndSong.CreateBucketIfNotExists([]byte(singers[i]))
+				singerName, err := tx.CreateBucketIfNotExists([]byte(singers[i]))
 				if err != nil {
 					fmt.Printf("create name bucket in singerAndSong error : %s", err)
 					return err
@@ -141,7 +140,7 @@ func CreateDB(filePath string) {
 
 			// handle the song info and put it into corrsponding bucket
 			songAndSeason := tx.Bucket([]byte("songAndSeason"))
-			songAndSeason.Put([]byte(attr[1]), []byte(string(seasonCnt)))
+			songAndSeason.Put([]byte(attr[1]), []byte(strconv.Itoa(seasonCnt)))
 
 			songAndDuration := tx.Bucket([]byte("songAndDuration"))
 			songAndDuration.Put([]byte(attr[1]), []byte(attr[2]))
@@ -166,26 +165,25 @@ func Query(api int, param string) string {
 	}
 	defer db.Close()
 
+	fmt.Printf("api : %d, param : %s", api, param)
 	var jsonStr string
 	switch api {
 	case 1:
-		//api : /singerapi/api/seasons/{id}
+		//api : /singerapi/api/seasons/{id}/
 		db.View(func(tx *bolt.Tx) error {
 			season := tx.Bucket([]byte("season" + param))
 
-			// title := season.Get([]byte("title"))
-			// BroadcastTime := season.Get([]byte("BroadcastTime"))
-			// winner := season.Get([]byte("winner"))
-			// hosts  := season.Get([]byte("hosts"))
-			// url  := season.Get([]byte("url"))
-			// singers  := season.Get([]byte("singers"))
-			// songs  := season.Get([]byte("songs"))
-
 			cur := season.Cursor()
 
+			isFirst := true
 			jsonStr = "{"
 			for k, v := cur.First(); k != nil; k, v = cur.Next() {
-				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+				if isFirst == true {
+					isFirst = false
+				} else if isFirst == false {
+					jsonStr += ","
+				}
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\""
 			}
 			jsonStr += "}"
 
@@ -194,31 +192,43 @@ func Query(api int, param string) string {
 	case 2:
 		//api : /singerapi/api/seasons/{id}/singers/
 		db.View(func(tx *bolt.Tx) error {
-			season := tx.Bucket([]byte("season" + param))
-			singers := season.Bucket([]byte("singers"))
+			singers := tx.Bucket([]byte("singerInSeason" + param))
 
 			cur := singers.Cursor()
 
+			isFirst := true
 			jsonStr = "{"
 			for k, v := cur.First(); k != nil; k, v = cur.Next() {
-				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+				if isFirst == true {
+					isFirst = false
+				} else if isFirst == false {
+					jsonStr += ","
+				}
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\""
 			}
 			jsonStr += "}"
+
 			return nil
 		})
 	case 3:
-		//api : /singerapi/api/seasons/{id}/songs
+		//api : /singerapi/api/seasons/{id}/songs/
 		db.View(func(tx *bolt.Tx) error {
-			season := tx.Bucket([]byte("season" + param))
-			songs := season.Bucket([]byte("songs"))
+			songs := tx.Bucket([]byte("songsInSeason" + param))
 
 			cur := songs.Cursor()
 
+			isFirst := true
 			jsonStr = "{"
 			for k, v := cur.First(); k != nil; k, v = cur.Next() {
-				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+				if isFirst == true {
+					isFirst = false
+				} else if isFirst == false {
+					jsonStr += ","
+				}
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\""
 			}
 			jsonStr += "}"
+
 			return nil
 		})
 	case 4:
@@ -227,9 +237,15 @@ func Query(api int, param string) string {
 			singers := tx.Bucket([]byte("singers"))
 			cur := singers.Cursor()
 
+			isFirst := true
 			jsonStr = "{"
-			for k, v := cur.Seek([]byte(param)); k != nil && string(k) == param; k, v = cur.Next() {
-				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+			for k, v := cur.First(); k != nil; k, v = cur.Next() {
+				if isFirst == true {
+					isFirst = false
+				} else if isFirst == false {
+					jsonStr += ","
+				}
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\""
 			}
 			jsonStr += "}"
 
@@ -241,9 +257,15 @@ func Query(api int, param string) string {
 			songs := tx.Bucket([]byte("songs"))
 			cur := songs.Cursor()
 
+			isFirst := true
 			jsonStr = "{"
-			for k, v := cur.Seek([]byte(param)); k != nil && string(k) == param; k, v = cur.Next() {
-				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\","
+			for k, v := cur.First(); k != nil; k, v = cur.Next() {
+				if isFirst == true {
+					isFirst = false
+				} else if isFirst == false {
+					jsonStr += ","
+				}
+				jsonStr += "\"" + string(k) + "\" : \"" + string(v) + "\""
 			}
 			jsonStr += "}"
 
@@ -253,5 +275,5 @@ func Query(api int, param string) string {
 		return ""
 
 	}
-	return ""
+	return jsonStr
 }
