@@ -1,21 +1,24 @@
 package main
 
 import (
+	"log"
 	"os"
 
-	db "github.com/singerapi/singer-server/database"
+	"github.com/singerapi/singer-server/database"
+	"github.com/singerapi/singer-server/rawdata"
 	"github.com/singerapi/singer-server/service"
 	flag "github.com/spf13/pflag"
 )
 
 // constant
-const (
-	PORT string = "8080"
-	PATH string = "rawdata/rawdata.txt"
+var (
+	PORT = "8080"
 )
 
 func main() {
-	db.CreateDB(PATH)
+	// create the bolt database
+	database.OpenDB(rawdata.LoadRawData)
+	defer database.Close()
 
 	var port string
 	port = os.Getenv("PORT")
@@ -27,5 +30,7 @@ func main() {
 	flag.Parse()
 
 	server := service.NewServer()
+	log.Printf("Client Home is served at: http://127.0.0.1:%s/singerapi/\n", port)
 	server.Run(":" + port)
+
 }
