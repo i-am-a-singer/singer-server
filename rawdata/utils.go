@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
+	"runtime"
 	"strings"
 
 	"github.com/boltdb/bolt"
@@ -12,7 +14,16 @@ import (
 )
 
 // RawDataPath is path to rawdata
-const RawDataPath = "./rawdata/rawdata.txt"
+var RawDataPath = "rawdata.txt"
+
+func init() {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	RawDataPath = path.Join(path.Dir(filename), RawDataPath)
+	log.Printf("'%s' prepared...\n", RawDataPath)
+}
 
 // LoadRawData preprocessing and load rawdata from rawdata.txt
 // And it will be refered in bolt database Update method

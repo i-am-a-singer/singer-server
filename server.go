@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/singerapi/singer-server/database"
@@ -10,9 +11,8 @@ import (
 )
 
 // constant
-const (
-	PORT string = "8080"
-	PATH string = "rawdata/rawdata.txt"
+var (
+	PORT = "8080"
 )
 
 func main() {
@@ -30,6 +30,7 @@ func main() {
 	flag.Parse()
 
 	server := service.NewServer()
+	log.Printf("Client Home is served at: http://127.0.0.1:%s/singerapi/\n", port)
 	server.Run(":" + port)
 
 }

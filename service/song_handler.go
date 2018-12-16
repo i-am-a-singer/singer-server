@@ -2,9 +2,7 @@ package service
 
 import (
 	"net/http"
-	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/singerapi/singer-server/database"
 	"github.com/singerapi/singer-server/entity"
 	"github.com/singerapi/singer-server/render"
@@ -12,16 +10,14 @@ import (
 
 // handleSongsID 处理 /singerapi/api/songs/{id} 请求
 func handleSongsID(w http.ResponseWriter, r *http.Request) {
-	prefix := r.Proto + "://" + r.Host + APIPrefix
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+	id, pageOpt := parseRequest(r)
 
 	sea := entity.Song{}
 	if err := database.Query(id, &sea); err != nil {
 		notFindErrorHandler(w, r)
 		return
 	}
-	render.ResourceItemJSONRender(w, http.StatusOK, &sea, prefix)
+	render.ResourceItemJSONRender(w, http.StatusOK, &sea, pageOpt.Prefix)
 }
 
 // 处理 /singerapi/api/songs/ 请求

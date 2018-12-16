@@ -1,7 +1,10 @@
 package database
 
 import (
+	"log"
 	"os"
+	"path"
+	"runtime"
 	"strconv"
 
 	"github.com/boltdb/bolt"
@@ -13,16 +16,26 @@ type SingerDB struct {
 	db *bolt.DB
 }
 
+// DistPath to make db
 var (
-	distPath = "data.db"
+	DistPath = "data.db"
 	singerDB = SingerDB{nil}
 )
+
+func init() {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	DistPath = path.Join(path.Dir(filename), DistPath)
+	log.Printf("'%s' prepared...\n", DistPath)
+}
 
 // OpenDB is interface from DB
 func (sdb *SingerDB) OpenDB(loader func(*bolt.Tx) error) error {
 	// create the bolt database
-	os.Remove(distPath)
-	dbptr, err := bolt.Open(distPath, 0600, nil)
+	os.Remove(DistPath)
+	dbptr, err := bolt.Open(DistPath, 0600, nil)
 	if err != nil {
 		return err
 	}
