@@ -2,6 +2,7 @@ package service
 
 import (
 	"net/http"
+	"fmt"
 
 	"github.com/singerapi/singer-server/render"
 
