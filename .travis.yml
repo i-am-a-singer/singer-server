@@ -1,0 +1,3 @@
+language: go
+before_install: go install github.com/singerapi/singer-server
+script: go run server.go
