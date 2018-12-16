@@ -103,13 +103,13 @@ func (s *Singer) APIFormatConstruct(HostPrefix string) interface{} {
 		HostPrefix + "/" + s.Type() + "s/" + strconv.Itoa(s.ID) + "/",
 	}
 	for _, ID := range s.AlbumsID {
-		apiItem.AlbumsID = append(apiItem.AlbumsID, HostPrefix+"/"+AlbumType+"/"+strconv.Itoa(ID)+"/")
+		apiItem.AlbumsID = append(apiItem.AlbumsID, HostPrefix+"/"+AlbumType+"s/"+strconv.Itoa(ID)+"/")
 	}
 	for _, ID := range s.SongsID {
-		apiItem.SongsID = append(apiItem.SongsID, HostPrefix+"/"+SongType+"/"+strconv.Itoa(ID)+"/")
+		apiItem.SongsID = append(apiItem.SongsID, HostPrefix+"/"+SongType+"s/"+strconv.Itoa(ID)+"/")
 	}
 	for _, ID := range s.SeasonsID {
-		apiItem.SeasonsID = append(apiItem.SeasonsID, HostPrefix+"/"+SeasonType+"/"+strconv.Itoa(ID)+"/")
+		apiItem.SeasonsID = append(apiItem.SeasonsID, HostPrefix+"/"+SeasonType+"s/"+strconv.Itoa(ID)+"/")
 	}
 	return apiItem
 }
