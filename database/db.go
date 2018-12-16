@@ -161,7 +161,7 @@ func CreateDB(filePath string) {
 }
 
 // Query query resource from db
-func Query(api int, param string) string {
+func query(api int, param string) string {
 	db, err := bolt.Open("data.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)

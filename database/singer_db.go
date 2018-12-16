@@ -36,12 +36,22 @@ func (sdb *SingerDB) Close() error {
 	return sdb.db.Close()
 }
 
+// OpenDB is interface from DB
+func OpenDB(loader func(*bolt.Tx) error) error {
+	return singerDB.OpenDB(loader)
+}
+
+// Close release all bolt.db resource
+func Close() error {
+	return singerDB.Close()
+}
+
 // CURD
 // For our service require we only implement Request
 
 // Query Entity
-func (sdb *SingerDB) Query(id int, e Entity) {
-	sdb.db.View(func(tx *bolt.Tx) error {
+func (sdb *SingerDB) Query(id int, e Entity) error {
+	return sdb.db.View(func(tx *bolt.Tx) error {
 		bk := tx.Bucket([]byte(e.Type()))
 		data := bk.Get([]byte(strconv.Itoa(id)))
 		if err := e.Decode(data); err != nil {
@@ -51,9 +61,14 @@ func (sdb *SingerDB) Query(id int, e Entity) {
 	})
 }
 
+// Query Entity
+func Query(id int, e Entity) error {
+	return singerDB.Query(id, e)
+}
+
 // QuerySeasonList query all entity of season
-func (sdb *SingerDB) QuerySeasonList(e []entity.Season, filter func(s *entity.Season) bool) {
-	sdb.db.View(func(tx *bolt.Tx) error {
+func (sdb *SingerDB) QuerySeasonList(e *[]entity.Season, filter func(s *entity.Season) bool) error {
+	return sdb.db.View(func(tx *bolt.Tx) error {
 		bk := tx.Bucket([]byte(entity.SeasonType))
 		if err := bk.ForEach(func(k, v []byte) error {
 			s := entity.Season{}
@@ -61,19 +76,20 @@ func (sdb *SingerDB) QuerySeasonList(e []entity.Season, filter func(s *entity.Se
 				return err
 			}
 			if filter(&s) {
-				e = append(e, s)
+				*e = append(*e, s)
 			}
 			return nil
 		}); err != nil {
 			return err
 		}
+
 		return nil
 	})
 }
 
 // QuerySongList query all entity of Song
-func (sdb *SingerDB) QuerySongList(e []entity.Song, filter func(s *entity.Song) bool) {
-	sdb.db.View(func(tx *bolt.Tx) error {
+func (sdb *SingerDB) QuerySongList(e *[]entity.Song, filter func(s *entity.Song) bool) error {
+	return sdb.db.View(func(tx *bolt.Tx) error {
 		bk := tx.Bucket([]byte(entity.SongType))
 		if err := bk.ForEach(func(k, v []byte) error {
 			s := entity.Song{}
@@ -81,7 +97,7 @@ func (sdb *SingerDB) QuerySongList(e []entity.Song, filter func(s *entity.Song) 
 				return err
 			}
 			if filter(&s) {
-				e = append(e, s)
+				*e = append(*e, s)
 			}
 			return nil
 		}); err != nil {
@@ -92,8 +108,8 @@ func (sdb *SingerDB) QuerySongList(e []entity.Song, filter func(s *entity.Song) 
 }
 
 // QuerySingerList query all entity of Singer
-func (sdb *SingerDB) QuerySingerList(e []entity.Singer, filter func(s *entity.Singer) bool) {
-	sdb.db.View(func(tx *bolt.Tx) error {
+func (sdb *SingerDB) QuerySingerList(e *[]entity.Singer, filter func(s *entity.Singer) bool) error {
+	return sdb.db.View(func(tx *bolt.Tx) error {
 		bk := tx.Bucket([]byte(entity.SingerType))
 		if err := bk.ForEach(func(k, v []byte) error {
 			s := entity.Singer{}
@@ -101,7 +117,7 @@ func (sdb *SingerDB) QuerySingerList(e []entity.Singer, filter func(s *entity.Si
 				return err
 			}
 			if filter(&s) {
-				e = append(e, s)
+				*e = append(*e, s)
 			}
 			return nil
 		}); err != nil {
@@ -112,8 +128,8 @@ func (sdb *SingerDB) QuerySingerList(e []entity.Singer, filter func(s *entity.Si
 }
 
 // QueryAlbumList query all entity of Album
-func (sdb *SingerDB) QueryAlbumList(e []entity.Album, filter func(s *entity.Album) bool) {
-	sdb.db.View(func(tx *bolt.Tx) error {
+func (sdb *SingerDB) QueryAlbumList(e *[]entity.Album, filter func(s *entity.Album) bool) error {
+	return sdb.db.View(func(tx *bolt.Tx) error {
 		bk := tx.Bucket([]byte(entity.AlbumType))
 		if err := bk.ForEach(func(k, v []byte) error {
 			s := entity.Album{}
@@ -121,7 +137,7 @@ func (sdb *SingerDB) QueryAlbumList(e []entity.Album, filter func(s *entity.Albu
 				return err
 			}
 			if filter(&s) {
-				e = append(e, s)
+				*e = append(*e, s)
 			}
 			return nil
 		}); err != nil {
@@ -132,61 +148,61 @@ func (sdb *SingerDB) QueryAlbumList(e []entity.Album, filter func(s *entity.Albu
 }
 
 // QuerySeason query season by id
-func (sdb *SingerDB) QuerySeason(id int, season *entity.Season) {
-	sdb.Query(id, season)
+func (sdb *SingerDB) QuerySeason(id int, season *entity.Season) error {
+	return sdb.Query(id, season)
 }
 
 // QuerySong query song by id
-func (sdb *SingerDB) QuerySong(id int, song *entity.Song) {
-	sdb.Query(id, song)
+func (sdb *SingerDB) QuerySong(id int, song *entity.Song) error {
+	return sdb.Query(id, song)
 }
 
 // QuerySinger query season by id
-func (sdb *SingerDB) QuerySinger(id int, singer *entity.Singer) {
-	sdb.Query(id, singer)
+func (sdb *SingerDB) QuerySinger(id int, singer *entity.Singer) error {
+	return sdb.Query(id, singer)
 }
 
 // QueryAlbum query season by id
-func (sdb *SingerDB) QueryAlbum(id int, album *entity.Album) {
-	sdb.Query(id, album)
+func (sdb *SingerDB) QueryAlbum(id int, album *entity.Album) error {
+	return sdb.Query(id, album)
 }
 
 // QuerySeasonList query all entity of Season
-func QuerySeasonList(e []entity.Season, filter func(s *entity.Season) bool) {
-	singerDB.QuerySeasonList(e, filter)
+func QuerySeasonList(e *[]entity.Season, filter func(s *entity.Season) bool) error {
+	return singerDB.QuerySeasonList(e, filter)
 }
 
 // QuerySongList query all entity of Song
-func QuerySongList(e []entity.Song, filter func(s *entity.Song) bool) {
-	singerDB.QuerySongList(e, filter)
+func QuerySongList(e *[]entity.Song, filter func(s *entity.Song) bool) error {
+	return singerDB.QuerySongList(e, filter)
 }
 
 // QuerySingerList query all entity of Singer
-func QuerySingerList(e []entity.Singer, filter func(s *entity.Singer) bool) {
-	singerDB.QuerySingerList(e, filter)
+func QuerySingerList(e *[]entity.Singer, filter func(s *entity.Singer) bool) error {
+	return singerDB.QuerySingerList(e, filter)
 }
 
 // QueryAlbumList query all entity of Album
-func QueryAlbumList(e []entity.Album, filter func(s *entity.Album) bool) {
-	singerDB.QueryAlbumList(e, filter)
+func QueryAlbumList(e *[]entity.Album, filter func(s *entity.Album) bool) error {
+	return singerDB.QueryAlbumList(e, filter)
 }
 
 // QuerySeason query season by id
-func QuerySeason(id int, season *entity.Season) {
-	singerDB.QuerySeason(id, season)
+func QuerySeason(id int, season *entity.Season) error {
+	return singerDB.QuerySeason(id, season)
 }
 
 // QuerySong query song by id
-func QuerySong(id int, song *entity.Song) {
-	singerDB.QuerySong(id, song)
+func QuerySong(id int, song *entity.Song) error {
+	return singerDB.QuerySong(id, song)
 }
 
 // QuerySinger query season by id
-func QuerySinger(id int, singer *entity.Singer) {
-	singerDB.QuerySinger(id, singer)
+func QuerySinger(id int, singer *entity.Singer) error {
+	return singerDB.QuerySinger(id, singer)
 }
 
 // QueryAlbum query season by id
-func QueryAlbum(id int, album *entity.Album) {
-	singerDB.QueryAlbum(id, album)
+func QueryAlbum(id int, album *entity.Album) error {
+	return singerDB.QueryAlbum(id, album)
 }

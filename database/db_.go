@@ -14,5 +14,5 @@ type Entity interface {
 type DB interface {
 	OpenDB(loader func(*bolt.Tx) error)
 	Close() error
-	Query(id int, e *Entity)
+	Query(id int, e *Entity) error
 }

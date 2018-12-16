@@ -68,12 +68,12 @@ func LoadRawData(tx *bolt.Tx) error {
 			seasonsTitleMap[attr[0]] = len(seasons) - 1
 		}
 		// Song instance
-		if ind, ok := songsTitleMap[attr[2]]; ok {
+		if ind, ok := songsTitleMap[attr[1]]; ok {
 			song = &songs[ind]
 		} else {
 			songs = append(songs, entity.NewSong(len(songs), attr[1], attr[2], []int{}, []int{}, []int{}))
 			song = &songs[len(songs)-1]
-			songsTitleMap[attr[0]] = len(songs) - 1
+			songsTitleMap[attr[1]] = len(songs) - 1
 		}
 		// Singer instances
 		for i, name := range nameList {
@@ -86,12 +86,12 @@ func LoadRawData(tx *bolt.Tx) error {
 			}
 		}
 		// Album instance
-		if ind, ok := albumsTitleMap[attr[2]]; ok {
+		if ind, ok := albumsTitleMap[attr[4]]; ok {
 			album = &albums[ind]
 		} else {
 			albums = append(albums, entity.NewAlbum(len(albums), attr[4], []int{}, []int{}, []int{}))
 			album = &albums[len(albums)-1]
-			albumsTitleMap[attr[0]] = len(albums) - 1
+			albumsTitleMap[attr[4]] = len(albums) - 1
 		}
 
 		// season related entity id

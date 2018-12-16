@@ -38,12 +38,12 @@ func (s *Singer) Type() string {
 
 // Encode encode
 func (s *Singer) Encode() ([]byte, error) {
-	return json.Marshal(*s)
+	return json.Marshal(s)
 }
 
 // Decode decode
 func (s *Singer) Decode(b []byte) error {
-	if err := json.Unmarshal(b, *s); err != nil {
+	if err := json.Unmarshal(b, s); err != nil {
 		return err
 	}
 	return nil
@@ -83,6 +83,35 @@ func (s *Singer) AddSeasonID(id int) {
 	if !s.HasSeason(id) {
 		s.SeasonsID = append(s.SeasonsID, id)
 	}
+}
+
+// APIFormatConstruct construct struct with api prefix
+func (s *Singer) APIFormatConstruct(HostPrefix string) interface{} {
+	var apiItem = struct {
+		ID        int      `json:"id"`
+		Name      string   `json:"name"`
+		AlbumsID  []string `json:"albums"`
+		SongsID   []string `json:"songs"`
+		SeasonsID []string `json:"seasons"`
+		URL       string   `json:"url"`
+	}{
+		s.ID,
+		s.Name,
+		[]string{},
+		[]string{},
+		[]string{},
+		HostPrefix + "/" + s.Type() + "s/" + strconv.Itoa(s.ID) + "/",
+	}
+	for _, ID := range s.AlbumsID {
+		apiItem.AlbumsID = append(apiItem.AlbumsID, HostPrefix+"/"+AlbumType+"/"+strconv.Itoa(ID)+"/")
+	}
+	for _, ID := range s.SongsID {
+		apiItem.SongsID = append(apiItem.SongsID, HostPrefix+"/"+SongType+"/"+strconv.Itoa(ID)+"/")
+	}
+	for _, ID := range s.SeasonsID {
+		apiItem.SeasonsID = append(apiItem.SeasonsID, HostPrefix+"/"+SeasonType+"/"+strconv.Itoa(ID)+"/")
+	}
+	return apiItem
 }
 
 // WriteSingerToBucket write entity to bucket with key of entity ID
